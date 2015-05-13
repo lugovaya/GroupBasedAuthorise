@@ -86,6 +86,8 @@ namespace GroupBasedAuthorise.DAL
             EntityTypeConfiguration<Permission> entityTypeConfiguration1 = modelBuilder.Entity<Permission>().ToTable("AspNetRoles");
             entityTypeConfiguration1.Property((Permission r) => r.Name).IsRequired();
         }
+
+        public System.Data.Entity.DbSet<GroupBasedAuthorise.Models.DataModels.ApplicationUser> IdentityUsers { get; set; }
     }
 
 }
