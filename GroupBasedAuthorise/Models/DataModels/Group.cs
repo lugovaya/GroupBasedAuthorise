@@ -9,7 +9,7 @@ namespace GroupBasedAuthorise.Models.DataModels
     {
         public Group()
         {
-            //this.Users = new HashSet<ApplicationUser>();
+            this.Users = new HashSet<ApplicationUser>();
             this.Permissions = new HashSet<GroupPermission>();
         }
 
@@ -22,7 +22,7 @@ namespace GroupBasedAuthorise.Models.DataModels
         public virtual string Name { get; set; }
         public virtual System.Guid CompanyId { get; set; }
 
-        //public virtual ICollection<ApplicationUser> Users { get; set; }
+        public virtual ICollection<ApplicationUser> Users { get; set; }
         public virtual ICollection<GroupPermission> Permissions { get; set; }
         public virtual Company Company { get; set; }
     }

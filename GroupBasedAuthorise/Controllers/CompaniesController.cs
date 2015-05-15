@@ -9,17 +9,41 @@ using System.Web;
 using System.Web.Mvc;
 using GroupBasedAuthorise.DAL;
 using GroupBasedAuthorise.Models.DataModels;
+using Microsoft.AspNet.Identity;
+using Microsoft.AspNet.Identity.EntityFramework;
 
 namespace GroupBasedAuthorise.Controllers
 {
-    public class CompanyController : Controller
+    public class CompaniesController : Controller
     {
-        private ApplicationDbContext db = new ApplicationDbContext();
+        public CompaniesController()
+        {
+            this.ApplicationDbContext = new ApplicationDbContext();
+            this.UserManager = new UserManager<ApplicationUser>(
+                new UserStore<ApplicationUser>(this.ApplicationDbContext));
+        }
+
+        /// <summary>
+        /// Application DB context
+        /// </summary>
+        protected ApplicationDbContext ApplicationDbContext { get; set; }
+
+        /// <summary>
+        /// User manager - attached to application DB context
+        /// </summary>
+        protected UserManager<ApplicationUser> UserManager { get; set; }
 
         // GET: Company
         public async Task<ActionResult> Index()
         {
-            return View(await db.Companies.ToListAsync());
+            var user = await UserManager.FindByIdAsync(User.Identity.GetUserId());
+
+            var companies = user.Companies;
+
+            if (companies.Count == 0)
+                return RedirectToAction("Create", "Companies");
+
+            return View(companies);
         }
 
         // GET: Company/Details/5
@@ -29,7 +53,7 @@ namespace GroupBasedAuthorise.Controllers
             {
                 return new HttpStatusCodeResult(HttpStatusCode.BadRequest);
             }
-            Company company = await db.Companies.FindAsync(id);
+            Company company = await ApplicationDbContext.Companies.FindAsync(id);
             if (company == null)
             {
                 return HttpNotFound();
@@ -53,8 +77,8 @@ namespace GroupBasedAuthorise.Controllers
             if (ModelState.IsValid)
             {
                 company.Id = Guid.NewGuid();
-                db.Companies.Add(company);
-                await db.SaveChangesAsync();
+                ApplicationDbContext.Companies.Add(company);
+                await ApplicationDbContext.SaveChangesAsync();
                 return RedirectToAction("Index");
             }
 
@@ -68,7 +92,7 @@ namespace GroupBasedAuthorise.Controllers
             {
                 return new HttpStatusCodeResult(HttpStatusCode.BadRequest);
             }
-            Company company = await db.Companies.FindAsync(id);
+            Company company = await ApplicationDbContext.Companies.FindAsync(id);
             if (company == null)
             {
                 return HttpNotFound();
@@ -85,8 +109,8 @@ namespace GroupBasedAuthorise.Controllers
         {
             if (ModelState.IsValid)
             {
-                db.Entry(company).State = EntityState.Modified;
-                await db.SaveChangesAsync();
+                ApplicationDbContext.Entry(company).State = EntityState.Modified;
+                await ApplicationDbContext.SaveChangesAsync();
                 return RedirectToAction("Index");
             }
             return View(company);
@@ -99,7 +123,7 @@ namespace GroupBasedAuthorise.Controllers
             {
                 return new HttpStatusCodeResult(HttpStatusCode.BadRequest);
             }
-            Company company = await db.Companies.FindAsync(id);
+            Company company = await ApplicationDbContext.Companies.FindAsync(id);
             if (company == null)
             {
                 return HttpNotFound();
@@ -112,9 +136,9 @@ namespace GroupBasedAuthorise.Controllers
         [ValidateAntiForgeryToken]
         public async Task<ActionResult> DeleteConfirmed(Guid id)
         {
-            Company company = await db.Companies.FindAsync(id);
-            db.Companies.Remove(company);
-            await db.SaveChangesAsync();
+            Company company = await ApplicationDbContext.Companies.FindAsync(id);
+            ApplicationDbContext.Companies.Remove(company);
+            await ApplicationDbContext.SaveChangesAsync();
             return RedirectToAction("Index");
         }
 
@@ -122,7 +146,7 @@ namespace GroupBasedAuthorise.Controllers
         {
             if (disposing)
             {
-                db.Dispose();
+                ApplicationDbContext.Dispose();
             }
             base.Dispose(disposing);
         }

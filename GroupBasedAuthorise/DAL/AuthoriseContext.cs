@@ -87,7 +87,6 @@ namespace GroupBasedAuthorise.DAL
             entityTypeConfiguration1.Property((Permission r) => r.Name).IsRequired();
         }
 
-        public System.Data.Entity.DbSet<GroupBasedAuthorise.Models.DataModels.ApplicationUser> IdentityUsers { get; set; }
+        //public System.Data.Entity.DbSet<GroupBasedAuthorise.Models.DataModels.ApplicationUser> IdentityUsers { get; set; }
     }
-
 }

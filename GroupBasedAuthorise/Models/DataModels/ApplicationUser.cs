@@ -14,9 +14,12 @@ namespace GroupBasedAuthorise.Models.DataModels
         public ApplicationUser()
         {
             this.Groups = new HashSet<ApplicationUserGroup>();
+            this.Companies = new HashSet<ApplicationUserCompany>();
         }
 
         public virtual ICollection<ApplicationUserGroup> Groups { get; set; }
+
+        public virtual ICollection<ApplicationUserCompany> Companies { get; set; }
 
         public async Task<ClaimsIdentity> GenerateUserIdentityAsync(UserManager<ApplicationUser> manager)
         {
