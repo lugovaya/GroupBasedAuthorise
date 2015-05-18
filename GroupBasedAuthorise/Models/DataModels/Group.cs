@@ -16,6 +16,8 @@ namespace GroupBasedAuthorise.Models.DataModels
         public Group(string groupName)
         {
             this.Name = groupName;
+            this.Users = new HashSet<ApplicationUser>();
+            this.Permissions = new HashSet<GroupPermission>();
         }
 
         public virtual int Id { get; set; }

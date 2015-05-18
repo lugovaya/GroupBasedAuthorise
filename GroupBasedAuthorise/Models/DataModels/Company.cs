@@ -12,6 +12,12 @@ namespace GroupBasedAuthorise.Models.DataModels
             this.Groups = new HashSet<Group>();
         }
 
+        public Company(string companyTitle)
+        {
+            this.Title = companyTitle;
+            this.Groups = new HashSet<Group>();
+        }
+
         public System.Guid Id { get; set; }
         public string Title { get; set; }
         public int GroupId { get; set; }
