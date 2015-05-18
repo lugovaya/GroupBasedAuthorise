@@ -4,11 +4,12 @@ using Microsoft.AspNet.Identity.EntityFramework;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using System.Web;
 
 namespace GroupBasedAuthorise.DAL
 {
-    public class IdentityManager
+    public class IdentityManager : IDisposable
     {
         // Swap ApplicationRole for IdentityRole:
         private readonly ApplicationDbContext _context = new ApplicationDbContext();
@@ -19,9 +20,14 @@ namespace GroupBasedAuthorise.DAL
         private readonly UserManager<ApplicationUser> _userManager = new UserManager<ApplicationUser>(
             new UserStore<ApplicationUser>(new ApplicationDbContext()));
 
-        public IdentityResult CreateUser(ApplicationUser user, string password)
+        public async Task<IdentityResult> CreateUser(ApplicationUser user, string password)
         {
-            return _userManager.Create(user, password);
+            return await _userManager.CreateAsync(user, password);
+        }
+
+        public async Task<ApplicationUser> GetUserById(string userId)
+        {
+            return await _userManager.FindByIdAsync(userId);
         }
 
         #region Permissions
@@ -36,9 +42,19 @@ namespace GroupBasedAuthorise.DAL
             return _permissionManager.RoleExists(name);
         }
 
+        public bool HasUserPermission(string userId, string permissionName)
+        {
+            return _userManager.IsInRole<ApplicationUser, string>(userId, permissionName);
+        }
+
         public IdentityResult AddUserToPermission(string userId, string permissionName)
         {
             return _userManager.AddToRole(userId, permissionName);
+        }
+
+        public async Task<IdentityResult> AddUserToPermissionAsync(string userId, string permissionName)
+        {
+            return await _userManager.AddToRoleAsync(userId, permissionName);
         }
 
         public void ClearUserPermissions(string userId)
@@ -53,9 +69,26 @@ namespace GroupBasedAuthorise.DAL
             }
         }
 
+        public async Task ClearUserPermissionsAsync(string userId)
+        {
+            ApplicationUser user = await _userManager.FindByIdAsync(userId);
+            var currentRoles = new List<IdentityUserRole>();
+
+            currentRoles.AddRange(user.Roles);
+            foreach (IdentityUserRole role in currentRoles)
+            {
+                await _userManager.RemoveFromRoleAsync(userId, role.RoleId); // TODO: check it
+            }
+        }
+
         public void RemoveFromPermission(string userId, string permissionName)
         {
             _userManager.RemoveFromRole(userId, permissionName);
+        }
+
+        public async Task RemoveFromPermissionAsync(string userId, string permissionName)
+        {
+            await _userManager.RemoveFromRoleAsync(userId, permissionName);
         }
 
         public void DeletePermission(string permissionId)
@@ -104,6 +137,25 @@ namespace GroupBasedAuthorise.DAL
                 AddPermissionToGroup(adminGroupId, ad_p));
 
             AddUserToGroup(userId, adminGroupId);
+
+            return adminGroupId;
+        }
+
+        public async Task<int> CreateAdminGroupAsync(string userId)
+        {
+            var adminGroupId = CreateGroup("Admin");
+
+            var adminPermissions = new List<string>
+            {
+                "Create", 
+                "Edit",
+                "Delete"
+            };
+
+            foreach (var ad_p in adminPermissions)
+                await AddPermissionToGroupAsync(adminGroupId, ad_p);
+
+            AddUserToGroupAsync(userId, adminGroupId);
 
             return adminGroupId;
         }
@@ -158,6 +210,26 @@ namespace GroupBasedAuthorise.DAL
             _context.SaveChanges();
         }
 
+        public async void AddUserToGroupAsync(string userId, int groupId)
+        {
+            var group = _context.Groups.Find(groupId);
+            var user = _context.Users.Find(userId);
+
+            var userGroup = new ApplicationUserGroup
+            {
+                Group = group,
+                GroupId = group.Id,
+                User = user,
+                UserId = user.Id
+            };
+
+            foreach (var permission in group.Permissions)
+                await _userManager.AddToRoleAsync(userId, permission.Permission.Name);
+
+            user.Groups.Add(userGroup);
+            await _context.SaveChangesAsync();
+        }
+
         public void RemoveUserFromGroup(string userId, int groupId)
         {
             var group = _context.Groups.FirstOrDefault(g => g.Id == groupId);
@@ -167,6 +239,17 @@ namespace GroupBasedAuthorise.DAL
             group.Users.Remove(user);
 
             _context.SaveChanges();
+        }
+
+        public async Task RemoveUserFromGroupAsync(string userId, int groupId)
+        {
+            var group = _context.Groups.FirstOrDefault(g => g.Id == groupId);
+            var user = group.Users.FirstOrDefault(u => u.Id == userId);
+
+            await ClearUserPermissionsAsync(userId);
+            group.Users.Remove(user);
+
+            await _context.SaveChangesAsync();
         }
 
         public void ClearGroupPermissions(int groupId)
@@ -191,6 +274,30 @@ namespace GroupBasedAuthorise.DAL
             }
             group.Permissions.Clear();
             _context.SaveChanges();
+        }
+
+        public async Task ClearGroupPermissionsAsync(int groupId)
+        {
+            var group = _context.Groups.Find(groupId);
+            var groupUsers = _context.Users.Where(u => u.Groups.Any(g => g.GroupId == group.Id));
+
+            foreach (var permission in group.Permissions)
+            {
+                var currentRoleId = permission.PermissionId;
+                foreach (ApplicationUser user in groupUsers)
+                {
+                    // Is the user a member of any other groups with this role?
+                    int groupsWithRole = user.Groups.Count(g => g.Group.Permissions.Any(r => r.PermissionId == currentRoleId));
+
+                    // This will be 1 if the current group is the only one:
+                    if (groupsWithRole == 1)
+                    {
+                        await RemoveFromPermissionAsync(user.Id, permission.Permission.Name);
+                    }
+                }
+            }
+            group.Permissions.Clear();
+            await _context.SaveChangesAsync();
         }
 
         public void AddPermissionToGroup(int groupId, string permissionName)
@@ -222,6 +329,39 @@ namespace GroupBasedAuthorise.DAL
                     AddUserToPermission(user.Id, permission.Name);
                 }
             }
+        }
+
+        public async Task<string> AddPermissionToGroupAsync(int groupId, string permissionName)
+        {
+            var group = _context.Groups.Find(groupId);
+            var permission = _context.Permissions.First(r => r.Name == permissionName);
+
+            var newPermission = new GroupPermission
+            {
+                GroupId = group.Id,
+                Group = group,
+                PermissionId = permission.Id,
+                Permission = permission
+            };
+
+            // make sure the groupRole is not already present
+            if (!group.Permissions.Contains(newPermission))
+            {
+                group.Permissions.Add(newPermission);
+                await _context.SaveChangesAsync();
+            }
+
+            // Add all of the users in this group to the new role:
+            IQueryable<ApplicationUser> groupUsers = _context.Users.Where(u => u.Groups.Any(g => g.GroupId == group.Id));
+            foreach (ApplicationUser user in groupUsers)
+            {
+                if (!(_userManager.IsInRole(user.Id, permissionName)))
+                {
+                    await AddUserToPermissionAsync(user.Id, permission.Name);
+                }
+            }
+
+            return permission.Id;
         }
 
         public void RemovePermissionFromGroup(int groupId, string permissionId)
@@ -261,7 +401,7 @@ namespace GroupBasedAuthorise.DAL
             if (CompanyNameExist(companyName))
             {
                 throw new GroupExistsException(
-                    "A group by that name already exists in the database. Please choose another name.");
+                    "A company by that name already exists in the database. Please choose another name.");
             }
 
             var company = new Company(companyName);
@@ -271,6 +411,35 @@ namespace GroupBasedAuthorise.DAL
             var groupId = CreateAdminGroup(userId);
 
             AddGroupToCompany(company.Id, groupId);
+        }
+
+        public async Task<Guid> CreateCompanyAsync(string companyName, string userId)
+        {
+            if (CompanyNameExist(companyName))
+            {
+                throw new GroupExistsException(
+                    "A company by that name already exists in the database. Please choose another name.");
+            }
+
+            var company = new Company(companyName);
+            _context.Companies.Add(company);
+            await _context.SaveChangesAsync();
+
+            var groupId = await CreateAdminGroupAsync(userId);
+
+            AddGroupToCompanyAsync(company.Id, groupId);
+
+            return company.Id;
+        }
+
+        public Company GetCompanyById(Guid companyId)
+        {
+            return _context.Companies.FirstOrDefault(c => c.Id == companyId);
+        }
+
+        public async Task<Company> GetCompanyByIdAsync(Guid companyID)
+        {
+            return await _context.Companies.FindAsync(companyID);
         }
 
         public bool CompanyNameExist(string companyName)
@@ -301,6 +470,16 @@ namespace GroupBasedAuthorise.DAL
             company.Groups.Add(group);
 
             _context.SaveChanges();
+        }
+
+        public async void AddGroupToCompanyAsync(Guid companyId, int groupId)
+        {
+            var company = _context.Companies.FirstOrDefault(c => c.Id == companyId);
+            var group = _context.Groups.FirstOrDefault(g => g.Id == groupId);
+
+            company.Groups.Add(group);
+
+            await _context.SaveChangesAsync();
         }
 
         public void RemoveGroupFromCompany(Guid companyId, int groupId)
@@ -346,6 +525,19 @@ namespace GroupBasedAuthorise.DAL
             _context.SaveChanges();
         }
 
+        public async Task RemoveUserFromCompanyGroupAsync(Guid companyId, int groupId, string userId)
+        {
+            var user = await GetUserById(userId);
+
+            var company = user.Companies.FirstOrDefault(c => c.CompanyId == companyId);
+
+            user.Companies.Remove(company);
+
+            await RemoveUserFromGroupAsync(userId, groupId);
+
+            await _context.SaveChangesAsync();
+        }
+
         public void DeleteCompany(Guid companyId)
         {
             var company = _context.Companies.FirstOrDefault(c => c.Id == companyId);
@@ -365,6 +557,25 @@ namespace GroupBasedAuthorise.DAL
             _context.SaveChanges();
         }
 
+        public async Task DeleteCompanyAsync(Guid companyId)
+        {
+            var company = await GetCompanyByIdAsync(companyId);
+
+            foreach (var group in company.Groups)
+            {
+                var groupId = group.Id;
+
+                foreach (var user in group.Users)
+                    await RemoveUserFromCompanyGroupAsync(companyId, groupId, user.Id);
+
+                await ClearGroupPermissionsAsync(groupId);
+            }
+
+            _context.Companies.Remove(company);
+
+            await _context.SaveChangesAsync();
+        }
+
         public void ClearUserCompanies(string userId)
         {
             var user = _context.Users.FirstOrDefault(x => x.Id == userId);
@@ -374,5 +585,43 @@ namespace GroupBasedAuthorise.DAL
             _context.SaveChanges();
         }
         #endregion
+
+        public void Dispose()
+        {
+            Dispose(true);
+        }
+
+        private void Dispose(bool disposing)
+        {
+            if (disposing)
+            {
+                _context.Dispose();
+                GC.SuppressFinalize(this);
+            }
+               
+        }
+
+        public Group GetGroupById(int gropId)
+        {
+            return _context.Groups.FirstOrDefault(g => g.Id == gropId);
+        }
+
+        public Permission GetPermissionById(string permissionId)
+        {
+            return _context.Permissions.FirstOrDefault(p => p.Id == permissionId);
+        }
+
+        public async Task UpdateCompanyAsync(Company newCompany)
+        {
+            var oldCompany = await GetCompanyByIdAsync(newCompany.Id);
+
+            // TODO: fill group users and user permissions for newCompany
+
+            _context.Companies.Remove(oldCompany);
+
+            _context.Companies.Add(newCompany);
+
+            await _context.SaveChangesAsync();
+        }
     }
 }

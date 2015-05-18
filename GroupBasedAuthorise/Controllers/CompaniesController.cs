@@ -11,34 +11,18 @@ using GroupBasedAuthorise.DAL;
 using GroupBasedAuthorise.Models.DataModels;
 using Microsoft.AspNet.Identity;
 using Microsoft.AspNet.Identity.EntityFramework;
+using GroupBasedAuthorise.Models;
 
 namespace GroupBasedAuthorise.Controllers
 {
     public class CompaniesController : Controller
     {
-        public CompaniesController()
-        {
-            this.ApplicationDbContext = new ApplicationDbContext();
-            this.UserManager = new UserManager<ApplicationUser>(
-                new UserStore<ApplicationUser>(this.ApplicationDbContext));
-        }
+        private readonly IdentityManager _manager = new IdentityManager();
 
-        /// <summary>
-        /// Application DB context
-        /// </summary>
-        protected ApplicationDbContext ApplicationDbContext { get; set; }
-
-        /// <summary>
-        /// User manager - attached to application DB context
-        /// </summary>
-        protected UserManager<ApplicationUser> UserManager { get; set; }
-
-        // GET: Company
+        // GET: /Companies
         public async Task<ActionResult> Index()
         {
-            var user = await UserManager.FindByIdAsync(User.Identity.GetUserId());
-
-            var companies = user.Companies;
+            List<CompanyViewModel> companies = await GetUserCompanies();
 
             if (companies.Count == 0)
                 return RedirectToAction("Create", "Companies");
@@ -46,57 +30,61 @@ namespace GroupBasedAuthorise.Controllers
             return View(companies);
         }
 
-        // GET: Company/Details/5
-        public async Task<ActionResult> Details(Guid? id)
-        {
-            if (id == null)
-            {
-                return new HttpStatusCodeResult(HttpStatusCode.BadRequest);
-            }
-            Company company = await ApplicationDbContext.Companies.FindAsync(id);
-            if (company == null)
-            {
-                return HttpNotFound();
-            }
-            return View(company);
-        }
-
-        // GET: Company/Create
+        // GET: /Companies/Create
         public ActionResult Create()
         {
             return View();
         }
 
-        // POST: Company/Create
+        // POST: /Companies/Create
         // To protect from overposting attacks, please enable the specific properties you want to bind to, for 
         // more details see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<ActionResult> Create([Bind(Include = "Id,Title,GroupId")] Company company)
+        public async Task<ActionResult> Create(CompanyViewModel company)
         {
             if (ModelState.IsValid)
             {
-                company.Id = Guid.NewGuid();
-                ApplicationDbContext.Companies.Add(company);
-                await ApplicationDbContext.SaveChangesAsync();
+                await _manager.CreateCompanyAsync(company.CompanyName, User.Identity.GetUserId());
                 return RedirectToAction("Index");
             }
 
             return View(company);
         }
 
-        // GET: Company/Edit/5
-        public async Task<ActionResult> Edit(Guid? id)
+
+        // GET: /Companies/Details/5
+        public async Task<ActionResult> Details(string id)
         {
             if (id == null)
             {
                 return new HttpStatusCodeResult(HttpStatusCode.BadRequest);
             }
-            Company company = await ApplicationDbContext.Companies.FindAsync(id);
+
+            var company = await _manager.GetCompanyByIdAsync(Guid.Parse(id));
+
             if (company == null)
             {
                 return HttpNotFound();
             }
+            return View(company);
+        }
+
+        // GET: Company/Edit/5
+        public async Task<ActionResult> Edit(string id)
+        {
+            if (id == null)
+            {
+                return new HttpStatusCodeResult(HttpStatusCode.BadRequest);
+            }
+
+            var company = await _manager.GetCompanyByIdAsync(Guid.Parse(id));
+
+            if (company == null)
+            {
+                return HttpNotFound();
+            }
+
             return View(company);
         }
 
@@ -105,48 +93,94 @@ namespace GroupBasedAuthorise.Controllers
         // more details see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<ActionResult> Edit([Bind(Include = "Id,Title,GroupId")] Company company)
+        public async Task<ActionResult> Edit(CompanyViewModel company)
         {
             if (ModelState.IsValid)
             {
-                ApplicationDbContext.Entry(company).State = EntityState.Modified;
-                await ApplicationDbContext.SaveChangesAsync();
+                await _manager.UpdateCompanyAsync((Company)company);
+
                 return RedirectToAction("Index");
             }
             return View(company);
         }
 
         // GET: Company/Delete/5
-        public async Task<ActionResult> Delete(Guid? id)
+        public async Task<ActionResult> Delete(string id)
         {
             if (id == null)
             {
                 return new HttpStatusCodeResult(HttpStatusCode.BadRequest);
             }
-            Company company = await ApplicationDbContext.Companies.FindAsync(id);
+
+            var company = await _manager.GetCompanyByIdAsync(Guid.Parse(id));
+
             if (company == null)
             {
                 return HttpNotFound();
             }
+            
             return View(company);
         }
 
         // POST: Company/Delete/5
         [HttpPost, ActionName("Delete")]
         [ValidateAntiForgeryToken]
-        public async Task<ActionResult> DeleteConfirmed(Guid id)
+        public async Task<ActionResult> DeleteConfirmed(string id)
         {
-            Company company = await ApplicationDbContext.Companies.FindAsync(id);
-            ApplicationDbContext.Companies.Remove(company);
-            await ApplicationDbContext.SaveChangesAsync();
+            await _manager.DeleteCompanyAsync(Guid.Parse(id));
+
             return RedirectToAction("Index");
         }
+        
+        private async Task<List<CompanyViewModel>> GetUserCompanies()
+        {
+            var userId = User.Identity.GetUserId();
+            var user = await _manager.GetUserById(userId);
 
+            var companies = new List<CompanyViewModel>();
+
+            foreach (var comp in user.Companies)
+            {
+                var company = new CompanyViewModel();
+
+                var domainCompany = _manager.GetCompanyById(comp.CompanyId);
+
+                company.CompanyId = domainCompany.Id;
+                company.CompanyName = domainCompany.Title;
+
+                foreach (var group in domainCompany.Groups)
+                {
+                    var permissions = new List<PermissionViewModel>();
+
+                    foreach (var perm in group.Permissions)
+                    {
+                        var domainPermission = _manager.GetPermissionById(perm.PermissionId);
+
+                        permissions.Add(new PermissionViewModel
+                        {
+                            Name = domainPermission.Name,
+                            Description = domainPermission.Description,
+                            Checked = _manager.HasUserPermission(userId, domainPermission.Name)
+                        });
+                    }
+
+                    company.CompanyGroups.Add(new GroupViewModel
+                    {
+                        GroupName = group.Name,
+                        Permissions = permissions
+                    });
+                }
+                companies.Add(company);
+            }
+
+            return companies;
+        }
+        
         protected override void Dispose(bool disposing)
         {
             if (disposing)
             {
-                ApplicationDbContext.Dispose();
+                _manager.Dispose();
             }
             base.Dispose(disposing);
         }
