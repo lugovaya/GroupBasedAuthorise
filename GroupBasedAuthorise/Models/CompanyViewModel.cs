@@ -1,6 +1,7 @@
 ﻿using GroupBasedAuthorise.Models.DataModels;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 using System.Linq;
 using System.Web;
 
@@ -13,10 +14,13 @@ namespace GroupBasedAuthorise.Models
             this.CompanyGroups = new List<GroupViewModel>();
         }
 
-        public Guid CompanyId { get; set; }
+        public string CompanyId { get; set; }
 
+        [Required]
+        [Display(Name = "Company name")]
         public string CompanyName { get; set; }
 
+        [Display(Name = "Company group")]
         public List<GroupViewModel> CompanyGroups { get; set; }
 
         // TODO: check it
@@ -24,7 +28,7 @@ namespace GroupBasedAuthorise.Models
         {
             var newCompany = new Company
             {
-                Id = company.CompanyId,
+                Id = Guid.Parse(company.CompanyId),
                 Title = company.CompanyName
             };
 

@@ -1,39 +1,45 @@
-﻿@model GroupBasedAuthorise.Models.DataModels.Company
+﻿@model IEnumerable<GroupBasedAuthorise.Models.CompanyViewModel>
 
 @{
     ViewBag.Title = "Index";
 }
 
-<h2>Index</h2>
+<h2>List of your companies</h2>
+<div class="container">
+    <div class="row">
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th>Company name</th>
+                    <th>Company group</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var company in Model)
+                {
+                    <tr>
+                        <td rowspan="@(company.CompanyGroups.Count)">
+                            @Html.ActionLink(company.CompanyName, "Details", new { id = company.CompanyId }, null)
+                            <a href="@Url.Action("Edit", new { id = company.CompanyId })" class="glyphicon glyphicon-pencil"></a>
+                            <a href="@Url.Action("Delete", new { id = company.CompanyId })" class="glyphicon glyphicon-remove"></a>
+                        </td>
+                        <td>@(company.CompanyGroups[0].GroupName)</td>
+                    </tr>
+                    for (var i = 1; i < company.CompanyGroups.Count - 1; i++)
+                    {
+                        <tr>
+                            <td>@(company.CompanyGroups[i].GroupName)</td>
+                        </tr>
+                    }
+                }
+            </tbody>
+        </table>
+    </div>
+    <div class="row">
+        @Html.ActionLink("Create new company", "Create")
+    </div>
+</div>
 
-<p>
-    @Html.ActionLink("Create New", "Create")
-</p>
-<table class="table">
-    <tr>
-        <th>
-            @Html.DisplayNameFor(model => model.Title)
-        </th>
-        <th>
-            @Html.DisplayNameFor(model => model.GroupId)
-        </th>
-        <th></th>
-    </tr>
 
-@foreach (var item in Model) {
-    <tr>
-        <td>
-            @Html.DisplayFor(modelItem => item.Title)
-        </td>
-        <td>
-            @Html.DisplayFor(modelItem => item.GroupId)
-        </td>
-        <td>
-            @Html.ActionLink("Edit", "Edit", new { id=item.Id }) |
-            @Html.ActionLink("Details", "Details", new { id=item.Id }) |
-            @Html.ActionLink("Delete", "Delete", new { id=item.Id })
-        </td>
-    </tr>
-}
 
-</table>
+

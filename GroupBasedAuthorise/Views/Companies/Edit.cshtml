@@ -1,4 +1,4 @@
-﻿@model GroupBasedAuthorise.Models.DataModels.Company
+﻿@model GroupBasedAuthorise.Models.CompanyViewModel
 
 @{
     ViewBag.Title = "Edit";
@@ -10,35 +10,77 @@
 @using (Html.BeginForm())
 {
     @Html.AntiForgeryToken()
-    
+
     <div class="form-horizontal">
         <h4>Company</h4>
         <hr />
         @Html.ValidationSummary(true, "", new { @class = "text-danger" })
-        @Html.HiddenFor(model => model.Id)
+        @Html.HiddenFor(model => model.CompanyId)
 
         <div class="form-group">
-            @Html.LabelFor(model => model.Title, htmlAttributes: new { @class = "control-label col-md-2" })
+            @Html.LabelFor(model => model.CompanyName, htmlAttributes: new { @class = "control-label col-md-2" })
             <div class="col-md-10">
-                @Html.EditorFor(model => model.Title, new { htmlAttributes = new { @class = "form-control" } })
-                @Html.ValidationMessageFor(model => model.Title, "", new { @class = "text-danger" })
+                @Html.EditorFor(model => model.CompanyName, new { htmlAttributes = new { @class = "form-control" } })
+                @Html.ValidationMessageFor(model => model.CompanyName, "", new { @class = "text-danger" })
             </div>
         </div>
 
         <div class="form-group">
-            @Html.LabelFor(model => model.GroupId, htmlAttributes: new { @class = "control-label col-md-2" })
+            @Html.LabelFor(model => model.CompanyGroups, htmlAttributes: new { @class = "control-label col-md-2" })
             <div class="col-md-10">
-                @Html.EditorFor(model => model.GroupId, new { htmlAttributes = new { @class = "form-control" } })
-                @Html.ValidationMessageFor(model => model.GroupId, "", new { @class = "text-danger" })
+                <dl class="dl-horizontal">
+                    @for (var i = 0; i < Model.CompanyGroups.Count; i++)
+                    {
+                        <dt>#@(i + 1)</dt>
+                        <dd>
+                            <a data-toggle="modal" data-target="#myModal@(Model.CompanyGroups[i].GroupId)">
+                                @(Model.CompanyGroups[i].GroupName)
+                            </a>
+                        </dd>
+                        <div class="modal fade" id="myModal@(Model.CompanyGroups[i].GroupId)" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+                            <div class="modal-dialog">
+                                <div class="modal-content">
+                                    <div class="modal-header">
+                                        <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                                        <h4 class="modal-title" id="myModalLabel">Group Edit</h4>
+                                    </div>
+                                    <div class="modal-body">
+                                        <div class="form-group">
+                                            <label class="control-label col-md-2" for="GroupName">@(Model.CompanyGroups[i].GroupName)</label>
+                                            <div class="col-md-10">
+                                                <input class="form-control text-box" id="Title" name="Title" type="text" value="@(Model.CompanyGroups[i].GroupName)">
+                                            </div>
+                                        </div>
+                                        <div class="form-group">
+                                            <label class="control-label col-md-2" for="GroupName">Permissions</label>
+                                            <div class="col-md-10">
+                                                @foreach (var permission in Model.CompanyGroups[i].Permissions)
+                                                {
+                                                    <input type="checkbox" name="Permission" value="@(permission.PermissionId)" />
+                                                    <text>@(permission.Name)</text>
+                                                }
+                                                @Html.ActionLink("To add new permission to group visit 'Edit Group' tab", "Edit", "Groups", new { id = Model.CompanyGroups[i].GroupId })
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="modal-footer">
+                                        <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+                                        <button type="button" class="btn btn-primary">Save changes</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                </dl>
+                </div>
             </div>
-        </div>
 
-        <div class="form-group">
-            <div class="col-md-offset-2 col-md-10">
-                <input type="submit" value="Save" class="btn btn-default" />
+            <div class="form-group">
+                <div class="col-md-offset-2 col-md-10">
+                    <input type="submit" value="Save" class="btn btn-default" />
+                </div>
             </div>
         </div>
-    </div>
 }
 
 <div>

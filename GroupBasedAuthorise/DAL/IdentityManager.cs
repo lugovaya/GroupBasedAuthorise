@@ -3,6 +3,7 @@ using Microsoft.AspNet.Identity;
 using Microsoft.AspNet.Identity.EntityFramework;
 using System;
 using System.Collections.Generic;
+using System.Data.Entity;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Web;
@@ -35,6 +36,12 @@ namespace GroupBasedAuthorise.DAL
         {
             // Swap ApplicationRole for IdentityRole:
             return _permissionManager.Create(new Permission(name, description));
+        }
+
+        public async Task<IdentityResult> CreatePermissionAsync(string name, string description = "")
+        {
+            // Swap ApplicationRole for IdentityRole:
+            return await _permissionManager.CreateAsync(new Permission(name, description));
         }
 
         public bool PermissionExists(string name)
@@ -122,6 +129,15 @@ namespace GroupBasedAuthorise.DAL
             return newGroup.Id;
         }
 
+        public async Task<int> CreateGroupAsync(string groupName, Guid companyId)
+        {
+            var newGroup = new Group(groupName, companyId);
+            _context.Groups.Add(newGroup);
+            await _context.SaveChangesAsync();
+
+            return newGroup.Id;
+        }
+
         public int CreateAdminGroup(string userId)
         {
             var adminGroupId = CreateGroup("Admin");
@@ -141,9 +157,9 @@ namespace GroupBasedAuthorise.DAL
             return adminGroupId;
         }
 
-        public async Task<int> CreateAdminGroupAsync(string userId)
+        public async Task<int> CreateAdminGroupAsync(Guid companyId, string userId)
         {
-            var adminGroupId = CreateGroup("Admin");
+            var adminGroupId = await CreateGroupAsync("Admin", companyId);
 
             var adminPermissions = new List<string>
             {
@@ -155,7 +171,9 @@ namespace GroupBasedAuthorise.DAL
             foreach (var ad_p in adminPermissions)
                 await AddPermissionToGroupAsync(adminGroupId, ad_p);
 
-            AddUserToGroupAsync(userId, adminGroupId);
+            await AddUserToCompanyGroupAsync(companyId, adminGroupId, userId);
+
+            //await AddUserToGroupAsync(userId, adminGroupId);
 
             return adminGroupId;
         }
@@ -210,10 +228,10 @@ namespace GroupBasedAuthorise.DAL
             _context.SaveChanges();
         }
 
-        public async void AddUserToGroupAsync(string userId, int groupId)
+        public async Task AddUserToGroupAsync(string userId, int groupId)
         {
-            var group = _context.Groups.Find(groupId);
-            var user = _context.Users.Find(userId);
+            var group = await _context.Groups.FindAsync(groupId);
+            var user = await ((System.Data.Entity.DbSet<ApplicationUser>)_context.Users).FindAsync(userId);
 
             var userGroup = new ApplicationUserGroup
             {
@@ -334,6 +352,12 @@ namespace GroupBasedAuthorise.DAL
         public async Task<string> AddPermissionToGroupAsync(int groupId, string permissionName)
         {
             var group = _context.Groups.Find(groupId);
+
+            if (_context.Permissions.Count() == 0)
+                await CreatePermissionAsync(permissionName);
+            else if(!PermissionExists(permissionName))
+                await CreatePermissionAsync(permissionName);
+
             var permission = _context.Permissions.First(r => r.Name == permissionName);
 
             var newPermission = new GroupPermission
@@ -425,7 +449,7 @@ namespace GroupBasedAuthorise.DAL
             _context.Companies.Add(company);
             await _context.SaveChangesAsync();
 
-            var groupId = await CreateAdminGroupAsync(userId);
+            var groupId = await CreateAdminGroupAsync(company.Id, userId);
 
             AddGroupToCompanyAsync(company.Id, groupId);
 
@@ -511,6 +535,25 @@ namespace GroupBasedAuthorise.DAL
             AddUserToGroup(userId, groupId);
 
             _context.SaveChanges();
+        }
+
+        public async Task AddUserToCompanyGroupAsync(Guid companyId, int groupId, string userId)
+        {
+            var company = await _context.Companies.FindAsync(companyId);
+            var user =  await ((DbSet<ApplicationUser>)_context.Users).FindAsync(userId);
+
+            user.Companies.Add(new ApplicationUserCompany
+            {
+                Id = Guid.NewGuid(),
+                UserId = userId,
+                CompanyId = companyId,
+                User = user,
+                Company = company
+            });
+
+            await AddUserToGroupAsync(userId, groupId);
+
+            await _context.SaveChangesAsync();
         }
 
         public void RemoveUserFromCompanyGroup(Guid companyId, int groupId, string userId)

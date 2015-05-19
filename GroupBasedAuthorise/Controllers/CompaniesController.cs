@@ -61,7 +61,7 @@ namespace GroupBasedAuthorise.Controllers
                 return new HttpStatusCodeResult(HttpStatusCode.BadRequest);
             }
 
-            var company = await _manager.GetCompanyByIdAsync(Guid.Parse(id));
+            var company = (CompanyViewModel) await _manager.GetCompanyByIdAsync(Guid.Parse(id));
 
             if (company == null)
             {
@@ -78,7 +78,7 @@ namespace GroupBasedAuthorise.Controllers
                 return new HttpStatusCodeResult(HttpStatusCode.BadRequest);
             }
 
-            var company = await _manager.GetCompanyByIdAsync(Guid.Parse(id));
+            var company = (CompanyViewModel) await _manager.GetCompanyByIdAsync(Guid.Parse(id));
 
             if (company == null)
             {
@@ -145,7 +145,7 @@ namespace GroupBasedAuthorise.Controllers
 
                 var domainCompany = _manager.GetCompanyById(comp.CompanyId);
 
-                company.CompanyId = domainCompany.Id;
+                company.CompanyId = domainCompany.Id.ToString();
                 company.CompanyName = domainCompany.Title;
 
                 foreach (var group in domainCompany.Groups)

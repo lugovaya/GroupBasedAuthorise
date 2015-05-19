@@ -1,4 +1,4 @@
-﻿@model GroupBasedAuthorise.Models.DataModels.Company
+﻿@model GroupBasedAuthorise.Models.CompanyViewModel
 
 @{
     ViewBag.Title = "Details";
@@ -11,24 +11,35 @@
     <hr />
     <dl class="dl-horizontal">
         <dt>
-            @Html.DisplayNameFor(model => model.Title)
+            @Html.DisplayNameFor(model => model.CompanyName)
         </dt>
 
         <dd>
-            @Html.DisplayFor(model => model.Title)
+            @Html.DisplayFor(model => model.CompanyName)
         </dd>
 
         <dt>
-            @Html.DisplayNameFor(model => model.GroupId)
+            <text>Company groups</text>
         </dt>
 
         <dd>
-            @Html.DisplayFor(model => model.GroupId)
+            <table class="table-striped">
+                @foreach (var group in Model.CompanyGroups)
+                {
+                    <tr>
+                        <td>
+                            @Html.ActionLink(group.GroupName, "Details", "Groups",  new { id = group.GroupId }, null)
+                            <a href="@Url.Action("Edit", "Groups", new { id = group.GroupId })" class="glyphicon glyphicon-pencil"></a>
+                            <a href="@Url.Action("Delete", "Groups", new { id = group.GroupId })" class="glyphicon glyphicon-remove"></a>
+                        </td>
+                    </tr>
+                }
+            </table>
         </dd>
 
     </dl>
 </div>
 <p>
-    @Html.ActionLink("Edit", "Edit", new { id = Model.Id }) |
+    @Html.ActionLink("Edit", "Edit", new { id = Model.CompanyId }) |
     @Html.ActionLink("Back to List", "Index")
 </p>

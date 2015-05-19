@@ -59,7 +59,7 @@ namespace GroupBasedAuthorise.Controllers
                 return RedirectToAction("Index");
             }
 
-            ViewBag.CompanyId = new SelectList(db.Companies, "Id", "Title", group.CompanyId);
+            //ViewBag.CompanyId = new SelectList(db.Companies, "Id", "Title", group.CompanyId);
             return View(group);
         }
 
@@ -75,7 +75,7 @@ namespace GroupBasedAuthorise.Controllers
             {
                 return HttpNotFound();
             }
-            ViewBag.CompanyId = new SelectList(db.Companies, "Id", "Title", group.CompanyId);
+            //ViewBag.CompanyId = new SelectList(db.Companies, "Id", "Title", group.CompanyId);
             return View(group);
         }
 
@@ -92,7 +92,7 @@ namespace GroupBasedAuthorise.Controllers
                 await db.SaveChangesAsync();
                 return RedirectToAction("Index");
             }
-            ViewBag.CompanyId = new SelectList(db.Companies, "Id", "Title", group.CompanyId);
+            //ViewBag.CompanyId = new SelectList(db.Companies, "Id", "Title", group.CompanyId);
             return View(group);
         }
 

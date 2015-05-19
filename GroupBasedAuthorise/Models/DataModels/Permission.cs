@@ -8,7 +8,8 @@ namespace GroupBasedAuthorise.Models.DataModels
 {
     public class Permission : IdentityRole
     {
-        public Permission() : base()
+        public Permission()
+            : base()
         {
             this.Groups = new HashSet<Group>();
         }
