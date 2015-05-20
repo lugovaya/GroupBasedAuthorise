@@ -78,7 +78,15 @@ namespace GroupBasedAuthorise.Controllers
                 return new HttpStatusCodeResult(HttpStatusCode.BadRequest);
             }
 
-            var company = (CompanyViewModel) await _manager.GetCompanyByIdAsync(Guid.Parse(id));
+            var userId = User.Identity.GetUserId();
+
+            var domainCompany = await _manager.GetCompanyByIdAsync(Guid.Parse(id));
+
+            var company = (CompanyViewModel) domainCompany;
+
+            foreach (var group in company.CompanyGroups)
+                foreach (var permission in group.Permissions)
+                    permission.Checked = await _manager.HasUserPermissionAsync(userId, permission.Name);
 
             if (company == null)
             {
@@ -97,7 +105,7 @@ namespace GroupBasedAuthorise.Controllers
         {
             if (ModelState.IsValid)
             {
-                await _manager.UpdateCompanyAsync((Company)company);
+                //TODO: update company
 
                 return RedirectToAction("Index");
             }

@@ -7,20 +7,53 @@ using System.Threading.Tasks;
 using System.Net;
 using System.Web;
 using System.Web.Mvc;
+using Microsoft.AspNet.Identity;
 using GroupBasedAuthorise.DAL;
 using GroupBasedAuthorise.Models.DataModels;
+using GroupBasedAuthorise.Models;
 
 namespace GroupBasedAuthorise.Controllers
 {
     public class GroupsController : Controller
     {
-        private ApplicationDbContext db = new ApplicationDbContext();
+        private readonly IdentityManager _manager = new IdentityManager();
+
 
         // GET: Groups
         public async Task<ActionResult> Index()
         {
-            var groups = db.Groups.Include(g => g.Company);
-            return View(await groups.ToListAsync());
+            var groups = await GetUserGroups();
+            return View(groups);
+        }
+
+        private async Task<List<GroupViewModel>> GetUserGroups()
+        {
+            var userId = User.Identity.GetUserId();
+            var user = await _manager.GetUserById(userId);
+
+            var groups = new List<GroupViewModel>();
+
+            foreach (var group in user.Groups)
+            {
+                var viewGroup = new GroupViewModel
+                {
+                    GroupId = group.GroupId,
+                    GroupName = group.Group.Name,
+                    CompanyId = group.Group.CompanyId.ToString()
+                };
+
+                foreach (var permission in group.Group.Permissions)
+                    viewGroup.Permissions.Add(new PermissionViewModel
+                        {
+                            Name = permission.Permission.Name,
+                            Description = permission.Permission.Description,
+                            PermissionId = permission.PermissionId,
+                            Checked = _manager.HasUserPermission(userId, permission.Permission.Name)
+                        });
+                groups.Add(viewGroup);
+            }
+
+            return groups;
         }
 
         // GET: Groups/Details/5

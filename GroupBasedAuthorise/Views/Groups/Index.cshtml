@@ -1,39 +1,44 @@
-﻿@model IEnumerable<GroupBasedAuthorise.Models.DataModels.Group>
+﻿@model IEnumerable<GroupBasedAuthorise.Models.GroupViewModel>
 
 @{
     ViewBag.Title = "Index";
 }
 
-<h2>Index</h2>
-
-<p>
-    @Html.ActionLink("Create New", "Create")
-</p>
-<table class="table">
-    <tr>
-        <th>
-            @Html.DisplayNameFor(model => model.Company.Title)
-        </th>
-        <th>
-            @Html.DisplayNameFor(model => model.Name)
-        </th>
-        <th></th>
-    </tr>
-
-@foreach (var item in Model) {
-    <tr>
-        <td>
-            @Html.DisplayFor(modelItem => item.Company.Title)
-        </td>
-        <td>
-            @Html.DisplayFor(modelItem => item.Name)
-        </td>
-        <td>
-            @Html.ActionLink("Edit", "Edit", new { id=item.Id }) |
-            @Html.ActionLink("Details", "Details", new { id=item.Id }) |
-            @Html.ActionLink("Delete", "Delete", new { id=item.Id })
-        </td>
-    </tr>
-}
-
-</table>
+<h2>List of your groups</h2>
+<div class="container">
+    <div class="row">
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th>Group name</th>
+                    <th>Company name</th>
+                    <th>Permission</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var group in Model)
+                {
+                    var permissionCount = group.Permissions.Count;
+                    
+                    <tr>
+                        <td rowspan="@(permissionCount)">
+                            @Html.ActionLink(group.GroupName, "Details", new { id = group.GroupId }, null)
+                            <a href="@Url.Action("Edit", new { id = group.GroupId })" class="glyphicon glyphicon-pencil"></a>
+                            <a href="@Url.Action("Delete", new { id = group.GroupId })" class="glyphicon glyphicon-remove"></a>
+                        </td>
+                        <td>@(group.Permissions[0].Name)</td>
+                    </tr>
+                    for (var i = 1; i < permissionCount - 1; i++)
+                    {
+                        <tr>
+                            <td>@(group.Permissions[i].Name)</td>
+                        </tr>
+                    }
+                }
+            </tbody>
+        </table>
+    </div>
+    <div class="row">
+        @Html.ActionLink("Create new company", "Create")
+    </div>
+</div>

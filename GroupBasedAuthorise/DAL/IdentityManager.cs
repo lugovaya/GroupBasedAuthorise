@@ -30,7 +30,6 @@ namespace GroupBasedAuthorise.DAL
         {
             return await _userManager.FindByIdAsync(userId);
         }
-
         #region Permissions
         public IdentityResult CreatePermission(string name, string description = "")
         {
@@ -52,6 +51,11 @@ namespace GroupBasedAuthorise.DAL
         public bool HasUserPermission(string userId, string permissionName)
         {
             return _userManager.IsInRole<ApplicationUser, string>(userId, permissionName);
+        }
+
+        public async Task<bool> HasUserPermissionAsync(string userId, string permissionName)
+        {
+            return await _userManager.IsInRoleAsync(userId, permissionName);
         }
 
         public IdentityResult AddUserToPermission(string userId, string permissionName)
@@ -111,6 +115,15 @@ namespace GroupBasedAuthorise.DAL
             _context.SaveChanges();
         }
 
+        public Permission GetPermissionById(string permissionId)
+        {
+            return _context.Permissions.FirstOrDefault(p => p.Id == permissionId);
+        }
+
+        public async Task<Permission> GetPermissionByIdAsync(string permissionId)
+        {
+            return await _context.Permissions.FindAsync(permissionId);
+        }
         #endregion
 
         #region Groups
@@ -177,6 +190,17 @@ namespace GroupBasedAuthorise.DAL
 
             return adminGroupId;
         }
+
+        public Group GetGroupById(int gropId)
+        {
+            return _context.Groups.FirstOrDefault(g => g.Id == gropId);
+        }
+
+        public async Task<Group> GetGroupByIdAsync(int gropId)
+        {
+            return await _context.Groups.FindAsync(gropId);
+        }
+
 
         public bool GroupNameExists(string groupName)
         {
@@ -355,7 +379,7 @@ namespace GroupBasedAuthorise.DAL
 
             if (_context.Permissions.Count() == 0)
                 await CreatePermissionAsync(permissionName);
-            else if(!PermissionExists(permissionName))
+            else if (!PermissionExists(permissionName))
                 await CreatePermissionAsync(permissionName);
 
             var permission = _context.Permissions.First(r => r.Name == permissionName);
@@ -526,7 +550,7 @@ namespace GroupBasedAuthorise.DAL
             user.Companies.Add(new ApplicationUserCompany
             {
                 Id = Guid.NewGuid(),
-                UserId = userId, 
+                UserId = userId,
                 CompanyId = companyId,
                 User = user,
                 Company = company
@@ -540,7 +564,7 @@ namespace GroupBasedAuthorise.DAL
         public async Task AddUserToCompanyGroupAsync(Guid companyId, int groupId, string userId)
         {
             var company = await _context.Companies.FindAsync(companyId);
-            var user =  await ((DbSet<ApplicationUser>)_context.Users).FindAsync(userId);
+            var user = await ((DbSet<ApplicationUser>)_context.Users).FindAsync(userId);
 
             user.Companies.Add(new ApplicationUserCompany
             {
@@ -641,30 +665,7 @@ namespace GroupBasedAuthorise.DAL
                 _context.Dispose();
                 GC.SuppressFinalize(this);
             }
-               
-        }
 
-        public Group GetGroupById(int gropId)
-        {
-            return _context.Groups.FirstOrDefault(g => g.Id == gropId);
-        }
-
-        public Permission GetPermissionById(string permissionId)
-        {
-            return _context.Permissions.FirstOrDefault(p => p.Id == permissionId);
-        }
-
-        public async Task UpdateCompanyAsync(Company newCompany)
-        {
-            var oldCompany = await GetCompanyByIdAsync(newCompany.Id);
-
-            // TODO: fill group users and user permissions for newCompany
-
-            _context.Companies.Remove(oldCompany);
-
-            _context.Companies.Add(newCompany);
-
-            await _context.SaveChangesAsync();
         }
     }
 }

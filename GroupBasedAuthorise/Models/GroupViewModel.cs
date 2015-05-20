@@ -38,6 +38,8 @@ namespace GroupBasedAuthorise.Models
             return newGroup;
         }
 
+        public string CompanyId { get; set; }
+
         public int GroupId { get; set; }
     }
 }
