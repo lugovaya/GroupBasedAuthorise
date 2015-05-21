@@ -24,5 +24,17 @@ namespace GroupBasedAuthorise.Models.DataModels
         public virtual string Description { get; set; }
 
         public virtual ICollection<Group> Groups { get; set; }
+
+        public static explicit operator PermissionViewModel(Permission permission)
+        {
+            var viewPermission = new PermissionViewModel
+            {
+                PermissionId = permission.Id,
+                Name = permission.Name,
+                Description = permission.Description
+            };
+
+            return viewPermission;
+        }
     }
 }

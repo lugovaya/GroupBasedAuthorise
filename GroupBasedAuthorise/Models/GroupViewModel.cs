@@ -40,6 +40,8 @@ namespace GroupBasedAuthorise.Models
 
         public string CompanyId { get; set; }
 
+        public string CompanyName { get; set; }
+
         public int GroupId { get; set; }
     }
 }

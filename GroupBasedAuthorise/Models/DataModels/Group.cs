@@ -56,7 +56,9 @@ namespace GroupBasedAuthorise.Models.DataModels
             var newGroup = new GroupViewModel
             {
                 GroupId = group.Id,
-                GroupName = group.Name
+                GroupName = group.Name,
+                CompanyId = group.CompanyId.ToString(),
+                CompanyName = group.Company.Title
             };
 
             foreach (var permission in group.Permissions)

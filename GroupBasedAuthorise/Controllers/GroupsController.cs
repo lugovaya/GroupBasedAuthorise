@@ -39,7 +39,8 @@ namespace GroupBasedAuthorise.Controllers
                 {
                     GroupId = group.GroupId,
                     GroupName = group.Group.Name,
-                    CompanyId = group.Group.CompanyId.ToString()
+                    CompanyId = group.Group.CompanyId.ToString(),
+                    CompanyName = group.Group.Company.Title
                 };
 
                 foreach (var permission in group.Group.Permissions)
@@ -63,7 +64,7 @@ namespace GroupBasedAuthorise.Controllers
             {
                 return new HttpStatusCodeResult(HttpStatusCode.BadRequest);
             }
-            Group group = await db.Groups.FindAsync(id);
+            var group = (GroupViewModel)await _manager.GetGroupByIdAsync(Convert.ToInt32(id));
             if (group == null)
             {
                 return HttpNotFound();
@@ -72,9 +73,22 @@ namespace GroupBasedAuthorise.Controllers
         }
 
         // GET: Groups/Create
+        public ActionResult Create(string companyId)
+        {
+            var group = new GroupViewModel
+            {
+                CompanyId = companyId
+            };
+
+            foreach (var avaliablePermission in _manager.GetAvaliablePermission())
+                group.Permissions.Add((PermissionViewModel)avaliablePermission);
+
+            return View(group);
+        }
+
         public ActionResult Create()
         {
-            ViewBag.CompanyId = new SelectList(db.Companies, "Id", "Title");
+            //ViewBag.CompanyId = new SelectList(db.Companies, "Id", "Title", group.CompanyId);            
             return View();
         }
 
@@ -83,16 +97,28 @@ namespace GroupBasedAuthorise.Controllers
         // more details see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<ActionResult> Create([Bind(Include = "Id,Name,CompanyId")] Group group)
+        public async Task<ActionResult> Create(GroupViewModel group)
         {
             if (ModelState.IsValid)
             {
-                db.Groups.Add(group);
-                await db.SaveChangesAsync();
+                var groupId = group.GroupId;
+                var companyId = Guid.Parse(group.CompanyId);
+                var userId = User.Identity.GetUserId();
+
+                // create new group
+                await _manager.CreateGroupAsync(group.GroupName, companyId);
+
+                // add to this group yourself
+                await _manager.AddUserToCompanyGroupAsync(companyId, groupId, userId);
+
+                // add to the group checked permission
+                foreach (var permission in group.Permissions)
+                    if (permission.Checked)
+                        await _manager.AddPermissionToGroupAsync(groupId, permission.Name);
+
                 return RedirectToAction("Index");
             }
 
-            //ViewBag.CompanyId = new SelectList(db.Companies, "Id", "Title", group.CompanyId);
             return View(group);
         }
 
@@ -103,12 +129,25 @@ namespace GroupBasedAuthorise.Controllers
             {
                 return new HttpStatusCodeResult(HttpStatusCode.BadRequest);
             }
-            Group group = await db.Groups.FindAsync(id);
+
+            var group = (GroupViewModel) await _manager.GetGroupByIdAsync(Convert.ToInt32(id));
+
+            var avaliablePermission = _manager.GetAvaliablePermission();
+
+            // checked permission
+            foreach (var permission in group.Permissions)
+                permission.Checked = true;
+
+            // unchecked permission
+            foreach (var permission in avaliablePermission)
+                if (group.Permissions.FirstOrDefault(x => x.PermissionId == permission.Id) == null)
+                    group.Permissions.Add((PermissionViewModel)permission);
+
             if (group == null)
             {
                 return HttpNotFound();
             }
-            //ViewBag.CompanyId = new SelectList(db.Companies, "Id", "Title", group.CompanyId);
+            
             return View(group);
         }
 
@@ -117,15 +156,34 @@ namespace GroupBasedAuthorise.Controllers
         // more details see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<ActionResult> Edit([Bind(Include = "Id,Name,CompanyId")] Group group)
+        public async Task<ActionResult> Edit(GroupViewModel group)
         {
             if (ModelState.IsValid)
             {
-                db.Entry(group).State = EntityState.Modified;
-                await db.SaveChangesAsync();
+                var domainGroup = await _manager.GetGroupByIdAsync(group.GroupId);
+                domainGroup.Name = group.GroupName;
+                
+                // remain only checked permission
+                foreach (var permission in group.Permissions.ToList())
+                    if (!permission.Checked)
+                        group.Permissions.Remove(permission);
+
+                // remove from domainGroup permissions that are not in viewGroup permission
+                foreach (var permission in domainGroup.Permissions.ToList())
+                    if (group.Permissions.FirstOrDefault(p => p.PermissionId == permission.PermissionId) == null)
+                        await _manager.RemovePermissionFromGroupAsync(group.GroupId, permission.PermissionId);
+
+                // add to domainGroup permissions that haven't been in it yet
+                foreach (var permission in group.Permissions)
+                    if (domainGroup.Permissions.FirstOrDefault(p => p.PermissionId == permission.PermissionId) == null)
+                        await _manager.AddPermissionToGroupAsync(group.GroupId, permission.Name);
+
+                // update new domainGroup in _context
+                await _manager.UpdateGroupAsync(domainGroup);
+
                 return RedirectToAction("Index");
             }
-            //ViewBag.CompanyId = new SelectList(db.Companies, "Id", "Title", group.CompanyId);
+            
             return View(group);
         }
 
@@ -136,7 +194,7 @@ namespace GroupBasedAuthorise.Controllers
             {
                 return new HttpStatusCodeResult(HttpStatusCode.BadRequest);
             }
-            Group group = await db.Groups.FindAsync(id);
+            var group = (GroupViewModel) await _manager.GetGroupByIdAsync(Convert.ToInt32(id));
             if (group == null)
             {
                 return HttpNotFound();
@@ -149,9 +207,7 @@ namespace GroupBasedAuthorise.Controllers
         [ValidateAntiForgeryToken]
         public async Task<ActionResult> DeleteConfirmed(int id)
         {
-            Group group = await db.Groups.FindAsync(id);
-            db.Groups.Remove(group);
-            await db.SaveChangesAsync();
+            await _manager.DeleteGroupAsync(id);
             return RedirectToAction("Index");
         }
 
@@ -159,7 +215,7 @@ namespace GroupBasedAuthorise.Controllers
         {
             if (disposing)
             {
-                db.Dispose();
+                _manager.Dispose();
             }
             base.Dispose(disposing);
         }

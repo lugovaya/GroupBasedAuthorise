@@ -26,9 +26,12 @@
                             <a href="@Url.Action("Edit", new { id = group.GroupId })" class="glyphicon glyphicon-pencil"></a>
                             <a href="@Url.Action("Delete", new { id = group.GroupId })" class="glyphicon glyphicon-remove"></a>
                         </td>
+                        <td rowspan="@(permissionCount)">
+                            @Html.ActionLink(group.CompanyName, "Details", "Companies", new { id = group.CompanyId }, null)
+                        </td>
                         <td>@(group.Permissions[0].Name)</td>
                     </tr>
-                    for (var i = 1; i < permissionCount - 1; i++)
+                    for (var i = 1; i < permissionCount; i++)
                     {
                         <tr>
                             <td>@(group.Permissions[i].Name)</td>
@@ -39,6 +42,6 @@
         </table>
     </div>
     <div class="row">
-        @Html.ActionLink("Create new company", "Create")
+        @Html.ActionLink("Add new group", "Create")
     </div>
 </div>

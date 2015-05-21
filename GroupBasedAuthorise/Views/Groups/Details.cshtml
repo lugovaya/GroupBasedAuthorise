@@ -1,4 +1,4 @@
-﻿@model GroupBasedAuthorise.Models.DataModels.Group
+﻿@model GroupBasedAuthorise.Models.GroupViewModel
 
 @{
     ViewBag.Title = "Details";
@@ -11,24 +11,36 @@
     <hr />
     <dl class="dl-horizontal">
         <dt>
-            @Html.DisplayNameFor(model => model.Company.Title)
+            @Html.DisplayNameFor(model => model.GroupName)
         </dt>
 
         <dd>
-            @Html.DisplayFor(model => model.Company.Title)
+            @Html.DisplayFor(model => model.GroupName)
         </dd>
 
         <dt>
-            @Html.DisplayNameFor(model => model.Name)
+            @Html.DisplayNameFor(model => model.CompanyName)
         </dt>
 
         <dd>
-            @Html.DisplayFor(model => model.Name)
+            @Html.DisplayFor(model => model.CompanyName)
         </dd>
 
+        <dt>
+            @Html.DisplayNameFor(model => model.Permissions)
+        </dt>
+
+        <dd>
+
+            @for (var i = 0; i < Model.Permissions.Count; i++)
+            {
+                <div>
+                    @Html.DisplayFor(x => x.Permissions[i].Name)
+                </div>
+            }
+        </dd>
     </dl>
-</div>
-<p>
-    @Html.ActionLink("Edit", "Edit", new { id = Model.Id }) |
-    @Html.ActionLink("Back to List", "Index")
-</p>
+    <p>
+        @Html.ActionLink("Edit", "Edit", new { id = Model.GroupId }) |
+        @Html.ActionLink("Back to List", "Index")
+    </p>

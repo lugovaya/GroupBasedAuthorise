@@ -223,12 +223,36 @@ namespace GroupBasedAuthorise.DAL
             _context.SaveChanges();
         }
 
+        public async Task ClearGroupUsersAsync(int groupId)
+        {
+            var group = await GetGroupByIdAsync(groupId);
+
+            foreach (var user in group.Users)
+            {
+                await ClearUserPermissionsAsync(user.Id);
+                await ClearUserCompaniesAsync(user.Id);
+                await ClearUserGroupsAsync(user.Id);
+            }
+
+            group.Users.Clear();
+
+            await _context.SaveChangesAsync();
+        }
+
         public void ClearUserGroups(string userId)
         {
             ClearUserPermissions(userId);
             ApplicationUser user = _context.Users.Find(userId);
             user.Groups.Clear();
             _context.SaveChanges();
+        }
+
+        public async Task ClearUserGroupsAsync(string userId)
+        {
+            await ClearUserPermissionsAsync(userId);
+            ApplicationUser user = await ((DbSet<ApplicationUser>) _context.Users).FindAsync(userId);
+            user.Groups.Clear();
+            await _context.SaveChangesAsync();
         }
 
         public void AddUserToGroup(string userId, int groupId)
@@ -285,7 +309,7 @@ namespace GroupBasedAuthorise.DAL
 
         public async Task RemoveUserFromGroupAsync(string userId, int groupId)
         {
-            var group = _context.Groups.FirstOrDefault(g => g.Id == groupId);
+            var group = await _context.Groups.FindAsync(groupId);
             var user = group.Users.FirstOrDefault(u => u.Id == userId);
 
             await ClearUserPermissionsAsync(userId);
@@ -421,7 +445,7 @@ namespace GroupBasedAuthorise.DAL
 
             _context.SaveChanges();
 
-            // Add all of the users in this group to the new role:
+            // Remove all of the users in this group to the role:
             IQueryable<ApplicationUser> groupUsers = _context.Users.Where(u => u.Groups.Any(g => g.GroupId == group.Id));
             foreach (ApplicationUser user in groupUsers)
             {
@@ -432,14 +456,60 @@ namespace GroupBasedAuthorise.DAL
             }
         }
 
+        public async Task RemovePermissionFromGroupAsync(int groupId, string permissionId)
+        {
+            var group = await _context.Groups.FindAsync(groupId);
+            var groupPermission = group.Permissions.FirstOrDefault(p => p.PermissionId == permissionId);
+
+            group.Permissions.Remove(groupPermission);
+
+            await _context.SaveChangesAsync();
+
+            var permission = await GetPermissionByIdAsync(permissionId);
+
+            // Remove all of the users in this group to the role:
+            IQueryable<ApplicationUser> groupUsers = _context.Users.Where(u => u.Groups.Any(g => g.GroupId == group.Id));
+            foreach (ApplicationUser user in groupUsers)
+            {
+                await RemoveFromPermissionAsync(user.Id, permission.Name); // TODO: check it
+            }
+        }
+
+        public async Task UpdateGroupAsync(Group group)
+        {
+            _context.Entry(group).State = EntityState.Modified;
+
+            await _context.SaveChangesAsync();                
+        }
+
         public void DeleteGroup(int groupId)
         {
-            Group group = _context.Groups.Find(groupId);
+            var group = _context.Groups.Find(groupId);
 
             // Clear the roles from the group:
             ClearGroupPermissions(groupId);
+
+            // remove all user from this group
+            foreach (var user in group.Users)
+                RemoveUserFromGroup(user.Id, groupId);
+
             _context.Groups.Remove(group);
             _context.SaveChanges();
+        }
+
+        public async Task DeleteGroupAsync(int id)
+        {
+            var group = await _context.Groups.FindAsync(id);
+
+            // Clear the roles from the group:
+            await ClearGroupPermissionsAsync(id);
+
+            // remove all user from this group
+            foreach (var user in group.Users)
+                await RemoveUserFromGroupAsync(user.Id, id);
+
+            _context.Groups.Remove(group);
+            await _context.SaveChangesAsync();
         }
         #endregion
 
@@ -651,6 +721,15 @@ namespace GroupBasedAuthorise.DAL
 
             _context.SaveChanges();
         }
+
+        public async Task ClearUserCompaniesAsync(string userId)
+        {
+            var user = await _context.Users.FirstOrDefaultAsync(x => x.Id == userId);
+
+            user.Companies.Clear();
+
+            await _context.SaveChangesAsync();
+        }
         #endregion
 
         public void Dispose()
@@ -666,6 +745,11 @@ namespace GroupBasedAuthorise.DAL
                 GC.SuppressFinalize(this);
             }
 
+        }
+
+        public IEnumerable<Permission> GetAvaliablePermission()
+        {
+            return _context.Permissions;
         }
     }
 }

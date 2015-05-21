@@ -1,4 +1,4 @@
-﻿@model GroupBasedAuthorise.Models.DataModels.Group
+﻿@model GroupBasedAuthorise.Models.GroupViewModel
 
 @{
     ViewBag.Title = "Edit";
@@ -6,39 +6,60 @@
 
 <h2>Edit</h2>
 
-
 @using (Html.BeginForm())
 {
     @Html.AntiForgeryToken()
-    
+
     <div class="form-horizontal">
         <h4>Group</h4>
         <hr />
         @Html.ValidationSummary(true, "", new { @class = "text-danger" })
-        @Html.HiddenFor(model => model.Id)
+        @Html.HiddenFor(model => model.GroupId)
 
         <div class="form-group">
-            @Html.LabelFor(model => model.Name, htmlAttributes: new { @class = "control-label col-md-2" })
+            @Html.LabelFor(model => model.GroupName, htmlAttributes: new { @class = "control-label col-md-2" })
             <div class="col-md-10">
-                @Html.EditorFor(model => model.Name, new { htmlAttributes = new { @class = "form-control" } })
-                @Html.ValidationMessageFor(model => model.Name, "", new { @class = "text-danger" })
+                @Html.EditorFor(model => model.GroupName, new { htmlAttributes = new { @class = "form-control" } })
+                @Html.ValidationMessageFor(model => model.GroupName, "", new { @class = "text-danger" })
             </div>
         </div>
 
         <div class="form-group">
-            @Html.LabelFor(model => model.CompanyId, "CompanyId", htmlAttributes: new { @class = "control-label col-md-2" })
+            @Html.LabelFor(model => model.Permissions, htmlAttributes: new { @class = "control-label col-md-2" })
             <div class="col-md-10">
-                @Html.DropDownList("CompanyId", null, htmlAttributes: new { @class = "form-control" })
-                @Html.ValidationMessageFor(model => model.CompanyId, "", new { @class = "text-danger" })
+                @for (var i = 0; i < Model.Permissions.Count; i++)
+                {
+                    <div class="checkbox">
+                        @Html.CheckBoxFor(x => x.Permissions[i].Checked)
+                        @Html.HiddenFor(x => x.Permissions[i].PermissionId)
+                        @Html.HiddenFor(x => x.Permissions[i].Name)
+                        @Html.DisplayFor(x => x.Permissions[i].Name)
+                        &nbsp;
+                        @if (!string.IsNullOrEmpty(Model.Permissions[i].Description))
+                        {
+                            <text>
+                                (@Html.DisplayFor(x => x.Permissions[i].Description))
+                            </text>
+                        }
+                    </div>
+                }
             </div>
         </div>
+
+        @*<div class="form-group">
+                @Html.LabelFor(model => model.CompanyId, "CompanyId", htmlAttributes: new { @class = "control-label col-md-2" })
+                <div class="col-md-10">
+                    @Html.DropDownList("CompanyId", null, htmlAttributes: new { @class = "form-control" })
+                    @Html.ValidationMessageFor(model => model.CompanyId, "", new { @class = "text-danger" })
+                </div>
+            </div>*@
 
         <div class="form-group">
             <div class="col-md-offset-2 col-md-10">
-                <input type="submit" value="Save" class="btn btn-default" />
+                <input type="submit" value="Save" class="btn btn-default" style="width:100%;" />
             </div>
         </div>
-    </div>
+        </div>
 }
 
 <div>

@@ -25,7 +25,7 @@
                         </td>
                         <td>@(company.CompanyGroups[0].GroupName)</td>
                     </tr>
-                    for (var i = 1; i < company.CompanyGroups.Count - 1; i++)
+                    for (var i = 1; i < company.CompanyGroups.Count; i++)
                     {
                         <tr>
                             <td>@(company.CompanyGroups[i].GroupName)</td>
