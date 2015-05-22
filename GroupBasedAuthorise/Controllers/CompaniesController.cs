@@ -17,7 +17,7 @@ namespace GroupBasedAuthorise.Controllers
 {
     public class CompaniesController : Controller
     {
-        private readonly IdentityManager _manager = new IdentityManager();
+        private readonly EntityManager _manager = new EntityManager();
 
         // GET: /Companies
         public async Task<ActionResult> Index()
@@ -105,7 +105,11 @@ namespace GroupBasedAuthorise.Controllers
         {
             if (ModelState.IsValid)
             {
-                //TODO: update company
+                var domainCompany = await _manager.GetCompanyByIdAsync(Guid.Parse(company.CompanyId));
+
+                domainCompany.Title = company.CompanyName;
+
+                await _manager.UpdateCompanyAsync(domainCompany);
 
                 return RedirectToAction("Index");
             }

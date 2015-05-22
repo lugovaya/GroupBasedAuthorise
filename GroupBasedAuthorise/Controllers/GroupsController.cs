@@ -16,8 +16,7 @@ namespace GroupBasedAuthorise.Controllers
 {
     public class GroupsController : Controller
     {
-        private readonly IdentityManager _manager = new IdentityManager();
-
+        private readonly EntityManager _manager = new EntityManager();
 
         // GET: Groups
         public async Task<ActionResult> Index()
@@ -72,24 +71,33 @@ namespace GroupBasedAuthorise.Controllers
             return View(group);
         }
 
-        // GET: Groups/Create
-        public ActionResult Create(string companyId)
+        // GET: Groups/CreateCompanyGroup
+        public ActionResult CreateCompanyGroup(string id)
         {
             var group = new GroupViewModel
             {
-                CompanyId = companyId
+                CompanyId = id
             };
 
             foreach (var avaliablePermission in _manager.GetAvaliablePermission())
                 group.Permissions.Add((PermissionViewModel)avaliablePermission);
 
-            return View(group);
+            return View("Create", group);
         }
 
+        // GET: Groups/Create
         public ActionResult Create()
         {
-            //ViewBag.CompanyId = new SelectList(db.Companies, "Id", "Title", group.CompanyId);            
-            return View();
+            var group = new GroupViewModel();
+
+            var avaliableCompanies = _manager.GetAllCompanies();
+
+            ViewBag.CompanyId = new SelectList(avaliableCompanies, "Id", "Title", group.CompanyId);
+
+            foreach (var avaliablePermission in _manager.GetAvaliablePermission())
+                group.Permissions.Add((PermissionViewModel)avaliablePermission);
+
+            return View(group);
         }
 
         // POST: Groups/Create
@@ -101,12 +109,11 @@ namespace GroupBasedAuthorise.Controllers
         {
             if (ModelState.IsValid)
             {
-                var groupId = group.GroupId;
                 var companyId = Guid.Parse(group.CompanyId);
                 var userId = User.Identity.GetUserId();
 
                 // create new group
-                await _manager.CreateGroupAsync(group.GroupName, companyId);
+                var groupId = await _manager.CreateGroupAsync(group.GroupName, companyId);
 
                 // add to this group yourself
                 await _manager.AddUserToCompanyGroupAsync(companyId, groupId, userId);
@@ -208,6 +215,69 @@ namespace GroupBasedAuthorise.Controllers
         public async Task<ActionResult> DeleteConfirmed(int id)
         {
             await _manager.DeleteGroupAsync(id);
+            return RedirectToAction("Index");
+        }
+
+        public ActionResult AddUsers(int id)
+        {
+            var usersModel = new AddUserToGroupViewModel { GroupId = id };
+
+            return View(usersModel);
+        }
+
+        [HttpPost]
+        public async Task<ActionResult> AddUsers(AddUserToGroupViewModel users)
+        {
+            if (ModelState.IsValid)
+            {
+                foreach (var email in users.UsersEmails)
+                {
+                    var user = await _manager.GetUserByEmailAsync(email.Email);
+
+                    await _manager.AddUserToGroupAsync(user.Id, users.GroupId);
+                }
+
+                return RedirectToAction("Index");
+            }
+
+            return View(users);
+        }
+
+        public ActionResult SendInvites(int id)
+        {
+            var usersModel = new AddUserToGroupViewModel { GroupId = id };
+
+            return View(usersModel);
+        }
+
+        [HttpPost]
+        public ActionResult SendInvites(AddUserToGroupViewModel users)
+        {
+            if (ModelState.IsValid)
+            {
+                foreach (var user in users.UsersEmails)
+                {
+                    // TODO: generate link for user invite from email
+                }
+
+                return RedirectToAction("Index");
+            }
+
+            return View(users);
+        }
+
+        public async Task<ActionResult> InviteUser(int id, string userEmail)
+        {
+            var user = await _manager.GetUserByEmailAsync(userEmail);
+
+            if (user == null)
+                return RedirectToAction("Register", "Account", null);
+
+            await _manager.AddUserToGroupAsync(user.Id, id);
+
+            if (!User.Identity.IsAuthenticated)
+                return RedirectToAction("Login", "Account", null);
+
             return RedirectToAction("Index");
         }
 

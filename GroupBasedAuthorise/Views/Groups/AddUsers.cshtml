@@ -1,0 +1,56 @@
+﻿@model GroupBasedAuthorise.Models.AddUserToGroupViewModel
+
+@{
+    ViewBag.Title = "AddUsers";
+    var usersCount = 0;
+}
+
+<h2>Add Users</h2>
+@using (Html.BeginForm())
+{
+    <div class="form-horizontal">
+        <h4>Add users to group</h4>
+        <hr />
+        @Html.ValidationSummary(true, "", new { @class = "text-danger" })
+        @Html.HiddenFor(model => model.GroupId)
+        <div id="users-container">
+            <div class="form-group">
+                <label class="control-label col-md-2">#@(usersCount + 1)</label>
+                <div class="col-md-10">
+                    @Html.EditorFor(model => model.UsersEmails[usersCount], new { htmlAttributes = new { @class = "form-control" } })
+                    @Html.ValidationMessageFor(model => model.UsersEmails[usersCount], "", new { @class = "text-danger" })
+                </div>
+            </div>
+        </div>        
+        <div class="form-group">
+            <div class="col-md-offset-2 col-md-10">
+                <button id="add-user" value="Add one more user" />
+            </div>
+        </div>
+        <div class="form-group">
+            <div class="pull-right">
+                <input type="submit" value="Add this users to the group" class="btn btn-default" />
+            </div>
+        </div>
+    </div>
+}
+
+@section Scripts {
+    @Scripts.Render("~/bundles/jqueryval")
+    <script type="text/javascript">
+        $(document, "ready", function () {
+            $("#add-user").on("click", function () {
+                $("#user-container").append('<div class="form-group">'
+                    + '<label class="control-label col-md-2">'
+                    + @(usersCount + 1) + '</label>'
+                    + '<div class="col-md-10">'
+                    + @Html.EditorFor(model => model.UsersEmails[usersCount], new { htmlAttributes = new { @class = "form-control" } })
+                    + @Html.ValidationMessageFor(model => model.UsersEmails[usersCount], "", new { @class = "text-danger" })
+                    + '</div></div>')
+                @{
+                    usersCount++;
+                }
+            });
+        });
+    </script>
+}

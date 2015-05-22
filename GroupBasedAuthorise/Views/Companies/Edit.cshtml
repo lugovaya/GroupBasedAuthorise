@@ -46,11 +46,9 @@
                                     </div>
                                     <div class="modal-body">
                                         <div class="form-group">
-                                            @Html.HiddenFor(x => x.CompanyGroups[i].GroupId);
                                             @Html.LabelFor(x => x.CompanyGroups[i].GroupName, htmlAttributes: new { @class = "control-label col-md-2" })
                                             <div class="col-md-10">
-                                                @Html.EditorFor(x => x.CompanyGroups[i].GroupName, new { htmlAttributes = new { @class = "form-control" } })
-                                                @Html.ValidationMessageFor(x => x.CompanyGroups[i].GroupName, "", new { @class = "text-danger" })
+                                                @Html.DisplayFor(x => x.CompanyGroups[i].GroupName)
                                             </div>
                                         </div>
                                         <div class="form-group">
@@ -60,21 +58,17 @@
                                                     @for (var j = 0; j < Model.CompanyGroups[i].Permissions.Count; j++ )
                                                     {
                                                         <li>
-                                                            @Html.CheckBoxFor(x => x.CompanyGroups[i].Permissions[j].Checked)
+                                                            @Html.CheckBoxFor(x => x.CompanyGroups[i].Permissions[j].Checked, new { @class  = "disable" })
                                                             @Html.DisplayFor(x => x.CompanyGroups[i].Permissions[j].Name, new { htmlAttributes = new { @class = "form-control" } })
-                                                            @*<input type="checkbox" name="Permission" value="@(permission.PermissionId)" />
-                                                            @(permission.Name)*@
                                                         </li>
                                                     }
                                                 </ul>
-
-                                                @Html.ActionLink("To add new permission to group visit 'Edit Group' tab", "Edit", "Groups", new { id = Model.CompanyGroups[i].GroupId })
+                                                @Html.ActionLink("To edit this group visit 'Edit Group' page", "Edit", "Groups", new { id = Model.CompanyGroups[i].GroupId }, null)
                                             </div>
                                         </div>
                                     </div>
                                     <div class="modal-footer">
                                         <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
-                                        @*<button type="button" class="btn btn-primary">Save changes</button>*@
                                     </div>
                                 </div>
                             </div>
@@ -82,7 +76,7 @@
                     }
                 </dl>
             </div>
-            @Html.ActionLink("Create new group for your company", "Create", "Groups", new { id = Model.CompanyId }, new { style = "margin-left:235px;", @class = "btn btn-default" })
+            @Html.ActionLink("Create new group for your company", "CreateCompanyGroup", "Groups", new { id = Model.CompanyId }, new { style = "margin-left:235px;", @class = "btn btn-default" })
         </div>
 
         <div class="form-group">

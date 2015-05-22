@@ -10,7 +10,7 @@ using System.Web;
 
 namespace GroupBasedAuthorise.DAL
 {
-    public class IdentityManager : IDisposable
+    public class EntityManager : IDisposable
     {
         // Swap ApplicationRole for IdentityRole:
         private readonly ApplicationDbContext _context = new ApplicationDbContext();
@@ -730,6 +730,13 @@ namespace GroupBasedAuthorise.DAL
 
             await _context.SaveChangesAsync();
         }
+
+        public async Task UpdateCompanyAsync(Company company)
+        {
+            _context.Entry(company).State = EntityState.Modified;
+
+            await _context.SaveChangesAsync(); 
+        }
         #endregion
 
         public void Dispose()
@@ -750,6 +757,18 @@ namespace GroupBasedAuthorise.DAL
         public IEnumerable<Permission> GetAvaliablePermission()
         {
             return _context.Permissions;
+        }
+
+        public IEnumerable<Company> GetAllCompanies()
+        {
+            return _context.Companies;
+        }
+
+        public async Task<ApplicationUser> GetUserByEmailAsync(string email)
+        {
+            var user = await _userManager.FindByEmailAsync(email);
+
+            return user;
         }
     }
 }
