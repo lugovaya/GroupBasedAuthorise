@@ -19,6 +19,7 @@ namespace GroupBasedAuthorise.Controllers
         private readonly EntityManager _manager = new EntityManager();
 
         // GET: Groups
+        [Authorize(Roles = "Edit, Create, Delete")]
         public async Task<ActionResult> Index()
         {
             var groups = await GetUserGroups();
@@ -57,6 +58,7 @@ namespace GroupBasedAuthorise.Controllers
         }
 
         // GET: Groups/Details/5
+        [Authorize(Roles = "Edit, Create, Delete")]
         public async Task<ActionResult> Details(int? id)
         {
             if (id == null)
@@ -72,6 +74,7 @@ namespace GroupBasedAuthorise.Controllers
         }
 
         // GET: Groups/CreateCompanyGroup
+        [Authorize(Roles = "Create, Delete")]
         public ActionResult CreateCompanyGroup(string id)
         {
             var group = new GroupViewModel
@@ -86,6 +89,7 @@ namespace GroupBasedAuthorise.Controllers
         }
 
         // GET: Groups/Create
+        [Authorize(Roles = "Create, Delete")]
         public ActionResult Create()
         {
             var group = new GroupViewModel();
@@ -103,6 +107,7 @@ namespace GroupBasedAuthorise.Controllers
         // POST: Groups/Create
         // To protect from overposting attacks, please enable the specific properties you want to bind to, for 
         // more details see http://go.microsoft.com/fwlink/?LinkId=317598.
+        [Authorize(Roles = "Create, Delete")]
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<ActionResult> Create(GroupViewModel group)
@@ -130,6 +135,7 @@ namespace GroupBasedAuthorise.Controllers
         }
 
         // GET: Groups/Edit/5
+        [Authorize(Roles = "Edit, Create, Delete")]
         public async Task<ActionResult> Edit(int? id)
         {
             if (id == null)
@@ -161,6 +167,7 @@ namespace GroupBasedAuthorise.Controllers
         // POST: Groups/Edit/5
         // To protect from overposting attacks, please enable the specific properties you want to bind to, for 
         // more details see http://go.microsoft.com/fwlink/?LinkId=317598.
+        [Authorize(Roles = "Edit, Create, Delete")]
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<ActionResult> Edit(GroupViewModel group)
@@ -195,6 +202,7 @@ namespace GroupBasedAuthorise.Controllers
         }
 
         // GET: Groups/Delete/5
+        [Authorize(Roles = "Delete")]
         public async Task<ActionResult> Delete(int? id)
         {
             if (id == null)
@@ -210,6 +218,7 @@ namespace GroupBasedAuthorise.Controllers
         }
 
         // POST: Groups/Delete/5
+        [Authorize(Roles = "Delete")]
         [HttpPost, ActionName("Delete")]
         [ValidateAntiForgeryToken]
         public async Task<ActionResult> DeleteConfirmed(int id)
@@ -218,21 +227,27 @@ namespace GroupBasedAuthorise.Controllers
             return RedirectToAction("Index");
         }
 
+        [Authorize(Roles="AddUsers")]
         public ActionResult AddUsers(int id)
         {
-            var usersModel = new AddUserToGroupViewModel { GroupId = id };
+            var usersModel = new AddUserToGroupViewModel();
+
+            usersModel.GroupId = id;
 
             return View(usersModel);
         }
 
+        [Authorize(Roles = "AddUsers")]
         [HttpPost]
         public async Task<ActionResult> AddUsers(AddUserToGroupViewModel users)
         {
             if (ModelState.IsValid)
             {
-                foreach (var email in users.UsersEmails)
+                var emails = users.UsersEmails.Split(',');
+
+                foreach (var email in emails)
                 {
-                    var user = await _manager.GetUserByEmailAsync(email.Email);
+                    var user = await _manager.GetUserByEmailAsync(email.Trim());
 
                     await _manager.AddUserToGroupAsync(user.Id, users.GroupId);
                 }
@@ -243,19 +258,25 @@ namespace GroupBasedAuthorise.Controllers
             return View(users);
         }
 
+        [Authorize(Roles = "Edit, Create, Delete")]
         public ActionResult SendInvites(int id)
         {
-            var usersModel = new AddUserToGroupViewModel { GroupId = id };
+            var usersModel = new AddUserToGroupViewModel();
+
+            usersModel.GroupId = id;
 
             return View(usersModel);
         }
 
+        [Authorize(Roles = "Edit, Create, Delete")]
         [HttpPost]
         public ActionResult SendInvites(AddUserToGroupViewModel users)
         {
             if (ModelState.IsValid)
             {
-                foreach (var user in users.UsersEmails)
+                var emails = users.UsersEmails.Split(',');
+
+                foreach (var user in emails)
                 {
                     // TODO: generate link for user invite from email
                 }

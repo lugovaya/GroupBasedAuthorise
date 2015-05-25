@@ -14,10 +14,13 @@ namespace GroupBasedAuthorise.Models.DataModels
         public ApplicationUser()
         {
             this.Groups = new HashSet<ApplicationUserGroup>();
+            this.GlobalGroups = new HashSet<ApplicationUserGlobalGroup>();
             this.Companies = new HashSet<ApplicationUserCompany>();
         }
 
         public virtual ICollection<ApplicationUserGroup> Groups { get; set; }
+
+        public virtual ICollection<ApplicationUserGlobalGroup> GlobalGroups { get; set; }
 
         public virtual ICollection<ApplicationUserCompany> Companies { get; set; }
 

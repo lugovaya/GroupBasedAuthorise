@@ -1,4 +1,5 @@
-﻿@model IEnumerable<GroupBasedAuthorise.Models.GroupViewModel>
+﻿@using GroupBasedAuthorise.Helpers
+@model IEnumerable<GroupBasedAuthorise.Models.GroupViewModel>
 
 @{
     ViewBag.Title = "Index";
@@ -27,8 +28,8 @@
                     <tr>
                         <td rowspan="@(permissionCount)">
                             @Html.ActionLink(group.GroupName, "Details", new { id = group.GroupId }, null)
-                            <a href="@Url.Action("Edit", new { id = group.GroupId })" class="glyphicon glyphicon-pencil"></a>
-                            <a href="@Url.Action("Delete", new { id = group.GroupId })" class="glyphicon glyphicon-remove"></a>
+                            @Html.IconLinkAllowedForPermission("Edit", "Groups", "Edit", new { id = group.GroupId }, "glyphicon glyphicon-pencil")
+                            @Html.IconLinkAllowedForPermission("Delete", "Groups", "Delete", new { id = group.GroupId }, "glyphicon glyphicon-remove")
                         </td>
                         <td rowspan="@(permissionCount)">
                             @Html.ActionLink(group.CompanyName, "Details", "Companies", new { id = group.CompanyId }, null)
@@ -36,7 +37,7 @@
                         <td>@(group.Permissions[0].Name)</td>
                         <td rowspan="@(permissionCount)">
                             <div class="btn-group-vertical" style="float:right;">
-                                @Html.ActionLink("Add to group", "AddUsers", new { id = group.GroupId }, new { @class = "btn btn-default" })
+                                @Html.ActionLinkAllowedForPermission("Add to group", "AddUsers", "Groups", "AddUsers", new { id = group.GroupId }, new { @class = "btn btn-default" })
                                 @Html.ActionLink("Send invite", "SendInvites", new { id = group.GroupId }, new { @class = "btn btn-default" })
                             </div>
                         </td>
@@ -52,6 +53,6 @@
         </table>
     </div>
     <div class="row">
-        @Html.ActionLink("Add new group", "Create")
+        @Html.ActionLinkAllowedForPermission("Add new group", "Create", "Groups", "Create")
     </div>
 </div>

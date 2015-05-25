@@ -2,7 +2,7 @@
 
 @{
     ViewBag.Title = "AddUsers";
-    var usersCount = 0;
+    var usersCount = 1;
 }
 
 <h2>Add Users</h2>
@@ -15,18 +15,21 @@
         @Html.HiddenFor(model => model.GroupId)
         <div id="users-container">
             <div class="form-group">
-                <label class="control-label col-md-2">#@(usersCount + 1)</label>
-                <div class="col-md-10">
-                    @Html.EditorFor(model => model.UsersEmails[usersCount], new { htmlAttributes = new { @class = "form-control" } })
-                    @Html.ValidationMessageFor(model => model.UsersEmails[usersCount], "", new { @class = "text-danger" })
+                @Html.LabelFor(model => model.UsersEmails, htmlAttributes: new { @class = "control-label col-md-2" })
+                <label class="control-label col-md-2">#@(usersCount)</label>
+                <div class="col-md-8">
+                    @Html.EditorFor(model => model.UsersEmails, new { htmlAttributes = new { @class = "form-control" } })
+                    @Html.ValidationMessageFor(model => model.UsersEmails, "", new { @class = "text-danger" })
                 </div>
             </div>
-        </div>        
-        <div class="form-group">
-            <div class="col-md-offset-2 col-md-10">
-                <button id="add-user" value="Add one more user" />
-            </div>
         </div>
+        @*<div class="form-group">
+            <div class="col-md-offset-2 col-md-10">
+                <button id="add-user" class="btn btn-default" >
+                    Add one more user
+                </button>
+            </div>
+        </div>*@
         <div class="form-group">
             <div class="pull-right">
                 <input type="submit" value="Add this users to the group" class="btn btn-default" />
@@ -34,23 +37,28 @@
         </div>
     </div>
 }
-
-@section Scripts {
-    @Scripts.Render("~/bundles/jqueryval")
-    <script type="text/javascript">
-        $(document, "ready", function () {
-            $("#add-user").on("click", function () {
-                $("#user-container").append('<div class="form-group">'
-                    + '<label class="control-label col-md-2">'
-                    + @(usersCount + 1) + '</label>'
-                    + '<div class="col-md-10">'
-                    + @Html.EditorFor(model => model.UsersEmails[usersCount], new { htmlAttributes = new { @class = "form-control" } })
-                    + @Html.ValidationMessageFor(model => model.UsersEmails[usersCount], "", new { @class = "text-danger" })
-                    + '</div></div>')
-                @{
+@*<script type="text/javascript">
+    $(document, "ready", function () {
+        @if (usersCount <= 10)
+            {
+                <text>
+        $("#add-user").on("click", function () {
+            $("#user-container").append('<div class="form-group">'
+                + '<label class="control-label col-md-2">'
+                + @(usersCount + 1) + '</label>'
+                + '<div class="col-md-10">'
+                + '@Html.Raw(HttpUtility.JavaScriptStringEncode(Html.EditorFor(model => model.UsersEmails[usersCount], new { htmlAttributes = new { @class = "form-control" } }).ToHtmlString()))'
+                + '@Html.Raw(HttpUtility.JavaScriptStringEncode(Html.ValidationMessageFor(model => model.UsersEmails[usersCount], "", new { @class = "text-danger" }).ToHtmlString()))'
+                + '</div></div>')
+            @{
                     usersCount++;
                 }
-            });
         });
-    </script>
+        </text>
+            }
+    });
+</script>*@
+
+@section Scripts {
+    @Scripts.Render("~/bundles/jqueryval")    
 }

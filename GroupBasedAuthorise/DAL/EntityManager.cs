@@ -58,6 +58,15 @@ namespace GroupBasedAuthorise.DAL
             return await _userManager.IsInRoleAsync(userId, permissionName);
         }
 
+        public static bool HasCurrentUserPermission(string permissionName)
+        {
+            var userId = HttpContext.Current.User.Identity.GetUserId();
+
+            return new UserManager<ApplicationUser>(
+                new UserStore<ApplicationUser>(
+                    new ApplicationDbContext())).IsInRole(userId, permissionName);
+        }
+
         public IdentityResult AddUserToPermission(string userId, string permissionName)
         {
             return _userManager.AddToRole(userId, permissionName);

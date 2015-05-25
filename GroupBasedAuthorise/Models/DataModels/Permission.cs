@@ -25,6 +25,8 @@ namespace GroupBasedAuthorise.Models.DataModels
 
         public virtual ICollection<Group> Groups { get; set; }
 
+        public virtual bool Global { get; set; }
+
         public static explicit operator PermissionViewModel(Permission permission)
         {
             var viewPermission = new PermissionViewModel

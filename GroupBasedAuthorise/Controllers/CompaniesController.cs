@@ -31,6 +31,7 @@ namespace GroupBasedAuthorise.Controllers
         }
 
         // GET: /Companies/Create
+        [Authorize(Roles="Create, Delete")]
         public ActionResult Create()
         {
             return View();
@@ -39,6 +40,7 @@ namespace GroupBasedAuthorise.Controllers
         // POST: /Companies/Create
         // To protect from overposting attacks, please enable the specific properties you want to bind to, for 
         // more details see http://go.microsoft.com/fwlink/?LinkId=317598.
+        [Authorize(Roles = "Create, Delete")]
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<ActionResult> Create(CompanyViewModel company)
@@ -71,6 +73,7 @@ namespace GroupBasedAuthorise.Controllers
         }
 
         // GET: Company/Edit/5
+        [Authorize(Roles = "Edit, Create, Delete")]
         public async Task<ActionResult> Edit(string id)
         {
             if (id == null)
@@ -99,6 +102,7 @@ namespace GroupBasedAuthorise.Controllers
         // POST: Company/Edit/5
         // To protect from overposting attacks, please enable the specific properties you want to bind to, for 
         // more details see http://go.microsoft.com/fwlink/?LinkId=317598.
+        [Authorize(Roles = "Edit, Create, Delete")]        
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<ActionResult> Edit(CompanyViewModel company)
@@ -117,6 +121,7 @@ namespace GroupBasedAuthorise.Controllers
         }
 
         // GET: Company/Delete/5
+        [Authorize(Roles = "Delete")]        
         public async Task<ActionResult> Delete(string id)
         {
             if (id == null)
@@ -137,6 +142,7 @@ namespace GroupBasedAuthorise.Controllers
         // POST: Company/Delete/5
         [HttpPost, ActionName("Delete")]
         [ValidateAntiForgeryToken]
+        [Authorize(Roles = "Delete")]
         public async Task<ActionResult> DeleteConfirmed(string id)
         {
             await _manager.DeleteCompanyAsync(Guid.Parse(id));

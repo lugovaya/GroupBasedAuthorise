@@ -18,8 +18,8 @@
             <div class="form-group">
                 <label class="control-label col-md-2">#@(usersCount + 1)</label>
                 <div class="col-md-10">
-                    @Html.EditorFor(model => model.UsersEmails[usersCount], new { htmlAttributes = new { @class = "form-control" } })
-                    @Html.ValidationMessageFor(model => model.UsersEmails[usersCount], "", new { @class = "text-danger" })
+                    @Html.EditorFor(model => model.UsersEmails, new { htmlAttributes = new { @class = "form-control" } })
+                    @Html.ValidationMessageFor(model => model.UsersEmails, "", new { @class = "text-danger" })
                 </div>
             </div>
         </div>
@@ -38,8 +38,11 @@
 
 @section Scripts {
     @Scripts.Render("~/bundles/jqueryval")
-    <script type="text/javascript">
+    @*<script type="text/javascript">
         $(document, "ready", function () {
+            @if (usersCount <= 10)
+            {
+                <text>
             $("#add-user").on("click", function () {
                 $("#user-container").append('<div class="form-group">'
                     + '<label class="control-label col-md-2">'
@@ -52,8 +55,10 @@
                     usersCount++;
                 }
             });
+            </text>
+            }
         });
-    </script>
+    </script>*@
 }
 
 

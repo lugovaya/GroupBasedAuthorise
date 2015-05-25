@@ -29,6 +29,8 @@ namespace GroupBasedAuthorise.DAL
 
         public virtual DbSet<Group> Groups { get; set; }
 
+        public virtual DbSet<GlobalGroup> GlobalGroups { get; set; }
+
         //// NOTE: not sure that it needs if we use AspNetUsers table
         //public virtual DbSet<ApplicationUser> Users { get; set; }
 
@@ -64,11 +66,23 @@ namespace GroupBasedAuthorise.DAL
             // And here:
             modelBuilder.Entity<Group>().HasMany<GroupPermission>((Group g) => g.Permissions);
             modelBuilder.Entity<GroupPermission>().HasKey((GroupPermission gr) => new { PermissionId = gr.PermissionId, GroupId = gr.GroupId })
-                .ToTable("ApplicationRoleGroups");
+                .ToTable("GroupPermissions");
 
             // And Here:
             EntityTypeConfiguration<Group> groupsConfig = modelBuilder.Entity<Group>().ToTable("Groups");
             groupsConfig.Property((Group r) => r.Name).IsRequired();
+
+            // Add the same for global group:
+            modelBuilder.Entity<ApplicationUser>().HasMany<ApplicationUserGlobalGroup>((ApplicationUser u) => u.GlobalGroups);
+            modelBuilder.Entity<ApplicationUserGlobalGroup>().HasKey((ApplicationUserGlobalGroup r) => new { UserId = r.UserId, GlGroupId = r.GlGroupId })
+                .ToTable("ApplicationUserGlobalGroups");
+
+            modelBuilder.Entity<GlobalGroup>().HasMany<GlobalGroupPermission>((GlobalGroup g) => g.Permissions);
+            modelBuilder.Entity<GlobalGroupPermission>().HasKey((GlobalGroupPermission gr) => new { GlPermissionId = gr.GlPermissionId, GlGroupId = gr.GlGroupId })
+                .ToTable("GlobalGroupPermissions");
+
+            EntityTypeConfiguration<GlobalGroup> globalGroupsConfig = modelBuilder.Entity<GlobalGroup>().ToTable("GlobalGroups");
+            globalGroupsConfig.Property((GlobalGroup r) => r.Name).IsRequired();
 
             // Leave this alone:
             EntityTypeConfiguration<IdentityUserLogin> entityTypeConfiguration =
